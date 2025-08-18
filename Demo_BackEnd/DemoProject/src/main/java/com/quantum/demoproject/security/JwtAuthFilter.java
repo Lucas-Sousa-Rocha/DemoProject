@@ -1,0 +1,84 @@
+package com.quantum.demoproject.security;
+
+import com.quantum.demoproject.model.UserEntity;
+import com.quantum.demoproject.repository.UserRepository;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
+
+    private final JwtService jwtService;
+    private final UserRepository userRepo;
+
+    private final RequestMatcher skipAuthEndpoints = request ->
+            request.getRequestURI().startsWith("/auth") || request.getRequestURI().startsWith("/h2-console");
+
+    public JwtAuthFilter(JwtService jwtService, UserRepository userRepo) {
+        this.jwtService = jwtService;
+        this.userRepo = userRepo;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return skipAuthEndpoints.matches(request);
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (!StringUtils.hasText(authHeader)) {
+            logger.debug("Nenhum cabeçalho Authorization encontrado");
+        } else if (!authHeader.startsWith("Bearer ")) {
+            logger.debug("Authorization header não começa com 'Bearer '");
+        } else {
+            String token = authHeader.substring(7);
+            try {
+                // Pega username do JWT
+                String username = jwtService.getSubject(token);
+                logger.debug("Token JWT recebido para usuário: {}", username);
+
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserEntity user = userRepo.findByUsername(username)
+                            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+                    logger.debug("Usuário encontrado: {}", user.getUsername());
+
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    logger.debug("Autenticação configurada no SecurityContext");
+                }
+
+            } catch (Exception ex) {
+                logger.error("Falha na autenticação JWT: {}", ex.getMessage());
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"" + ex.getMessage() + "\"}");
+                return;
+            }
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
