@@ -7,6 +7,20 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
 
+//@Component
+//public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
+//
+//    @Override
+//    public void commence(HttpServletRequest request,
+//                         HttpServletResponse response,
+//                         AuthenticationException authException) throws IOException {
+//
+//        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//        response.setContentType("application/json");
+//        response.getWriter().write("{\"error\": \"" + authException.getMessage() + "\"}");
+//    }
+//}
+
 @Component
 public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
 
@@ -17,7 +31,11 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-        response.getWriter().write("{\"error\": \"" + authException.getMessage() + "\"}");
+
+        // Mensagem personalizada
+        String json = "{\"error\": \"Você não tem autorização para acessar esse recurso. \"}";
+
+        response.getWriter().write(json);
     }
 }
 

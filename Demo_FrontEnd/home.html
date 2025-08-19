@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <script src="script.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body onload="loadUser()">
+<div class="container">
+    <h1>Bem-vindo!</h1>
+    <div class="user-info">
+        <p><strong>ID:</strong> <span id="userId"></span></p>
+        <p><strong>Username:</strong> <span id="userUsername"></span></p>
+        <p><strong>Email:</strong> <span id="userEmail"></span></p>
+        <p><strong>Nome:</strong> <span id="userName"></span></p>
+        <p><strong>Roles:</strong> <span id="userRoles"></span></p>
+    </div>
+    <button onclick="logout()">Sair</button>
+</div>
+<div id="tokens"></div>
+<button onclick="mostrarTokens()">Mostrar Tokens</button>
+
+</body>
+</html>

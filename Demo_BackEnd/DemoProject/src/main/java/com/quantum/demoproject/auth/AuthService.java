@@ -28,12 +28,12 @@ public class AuthService {
     private final EmailService emailService;
 
     public AuthService(UserRepository userRepo,
-                       RoleRepository roleRepo,
-                       PasswordEncoder encoder,
-                       AuthenticationManager authManager,
-                       JwtService jwt,
-                       PasswordResetTokenRepository resetRepo,
-                       EmailService emailService) {
+       RoleRepository roleRepo,
+       PasswordEncoder encoder,
+       AuthenticationManager authManager,
+       JwtService jwt,
+       PasswordResetTokenRepository resetRepo,
+       EmailService emailService) {
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.encoder = encoder;
@@ -42,32 +42,6 @@ public class AuthService {
         this.resetRepo = resetRepo;
         this.emailService = emailService;
     }
-
-//    @Transactional
-//    public void register(RegisterRequest dto) {
-//        // Verifica se email ou username já existem
-//        if (userRepo.existsByEmail(dto.getEmail())) {
-//            throw new IllegalArgumentException("E-mail já cadastrado");
-//        }
-//        if (userRepo.existsByUsername(dto.getUsername())) {
-//            throw new IllegalArgumentException("Username já cadastrado");
-//        }
-//
-//        RoleEntity userRole = roleRepo.findByName("ROLE_USER")
-//                .orElseThrow(() -> new IllegalStateException("Role ROLE_USER não encontrada"));
-//
-//        UserEntity user = new UserEntity();
-//        user.setEmail(dto.getEmail());
-//        user.setUsername(dto.getUsername());
-//        user.setName(dto.getName());
-//        user.setPassword(encoder.encode(dto.getPassword()));
-//        user.setDateBirth(dto.getDateBirth());
-//        user.setNumberTel(dto.getNumberTel());
-//        user.setRoles(Set.of(userRole));
-//        user.setEnabled(true);
-//
-//        userRepo.save(user);
-//    }
 
     @Transactional
     public void register(RegisterRequest dto) {
@@ -103,9 +77,6 @@ public class AuthService {
 
         userRepo.save(user);
     }
-
-
-
 
     public TokenResponse login(LoginRequest dto) {
         UsernamePasswordAuthenticationToken auth =

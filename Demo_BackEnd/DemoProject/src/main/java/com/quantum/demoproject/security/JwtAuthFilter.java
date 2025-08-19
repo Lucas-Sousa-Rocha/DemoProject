@@ -26,8 +26,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRepository userRepo;
 
+    // Ignorar apenas endpoints públicos
     private final RequestMatcher skipAuthEndpoints = request ->
-            request.getRequestURI().startsWith("/auth") || request.getRequestURI().startsWith("/h2-console");
+            request.getRequestURI().startsWith("/auth/login") ||
+                    request.getRequestURI().startsWith("/auth/register") ||
+                    request.getRequestURI().startsWith("/auth/refresh") ||
+                    request.getRequestURI().startsWith("/h2-console");
 
     public JwtAuthFilter(JwtService jwtService, UserRepository userRepo) {
         this.jwtService = jwtService;
@@ -46,37 +50,35 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (!StringUtils.hasText(authHeader)) {
-            logger.debug("Nenhum cabeçalho Authorization encontrado");
-        } else if (!authHeader.startsWith("Bearer ")) {
-            logger.debug("Authorization header não começa com 'Bearer '");
-        } else {
-            String token = authHeader.substring(7);
-            try {
-                // Pega username do JWT
-                String username = jwtService.getSubject(token);
-                logger.debug("Token JWT recebido para usuário: {}", username);
+        if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
+            logger.debug("Nenhum token válido encontrado no header Authorization");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserEntity user = userRepo.findByUsername(username)
-                            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        String token = authHeader.substring(7);
+        try {
+            String username = jwtService.getSubject(token);
+            logger.debug("Token JWT recebido para usuário: {}", username);
 
-                    logger.debug("Usuário encontrado: {}", user.getUsername());
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserEntity user = userRepo.findByUsername(username)
+                        .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    logger.debug("Autenticação configurada no SecurityContext");
-                }
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
 
-            } catch (Exception ex) {
-                logger.error("Falha na autenticação JWT: {}", ex.getMessage());
-                SecurityContextHolder.clearContext();
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"error\": \"" + ex.getMessage() + "\"}");
-                return;
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+                logger.debug("Autenticação configurada no SecurityContext para: {}", user.getUsername());
             }
+
+        } catch (Exception ex) {
+            logger.error("Falha na autenticação JWT: {}", ex.getMessage());
+            SecurityContextHolder.clearContext();
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"" + ex.getMessage() + "\"}");
+            return;
         }
 
         filterChain.doFilter(request, response);

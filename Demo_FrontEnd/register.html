@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Usuário</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Cadastro de Usuário</h1>
+    <div class="error" id="error"></div>
+
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Senha">
+    <input type="email" id="email" placeholder="Email">
+    <input type="text" id="name" placeholder="Nome completo">
+    <input type="date" id="dateBirth" placeholder="Data de nascimento">
+
+    <!-- Select Código do País -->
+    <select id="countryCode">
+        <option value="">Selecione o país</option>
+        <option value="+55">🇧🇷 Brasil (+55)</option>
+        <option value="+1">🇺🇸 EUA (+1)</option>
+        <option value="+44">🇬🇧 Reino Unido (+44)</option>
+    </select>
+
+    <!-- Select DDD -->
+    <select id="ddd">
+        <option value="">Selecione o DDD</option>
+        <option value="11">11 - SP</option>
+        <option value="21">21 - RJ</option>
+        <option value="31">31 - MG</option>
+        <option value="85">85 - CE</option>
+    </select>
+
+    <!-- Input para número de telefone -->
+    <input type="text" id="phone" placeholder="Número (9 dígitos)" maxlength="9">
+
+    <button onclick="register()">Cadastrar</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

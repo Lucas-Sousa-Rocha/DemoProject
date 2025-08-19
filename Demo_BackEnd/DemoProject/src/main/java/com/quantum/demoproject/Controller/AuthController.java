@@ -12,9 +12,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/auth")
@@ -31,11 +29,6 @@ public class AuthController {
         authService.register(dto);
         return ResponseEntity.ok().build();
     }
-
-//    @PostMapping("/login")
-//    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest dto) {
-//        return ResponseEntity.ok(authService.login(dto));
-//    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest dto) {
@@ -54,7 +47,6 @@ public class AuthController {
         }
     }
 
-
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refresh(@RequestParam String refreshToken) {
         return ResponseEntity.ok(authService.refresh(refreshToken));
@@ -63,7 +55,7 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> forgot(@Valid @RequestBody ForgotPasswordRequest dto,
                                        @RequestHeader(value="X-App-Base-Url", required=false) String baseUrl) {
-        String appBase = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl : "http://localhost:3000";
+        String appBase = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl : "http://localhost:8080";
         authService.forgotPassword(dto, appBase);
         return ResponseEntity.ok().build();
     }
@@ -76,42 +68,30 @@ public class AuthController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
-    public MeView me(@AuthenticationPrincipal UserEntity user) {
-        return new MeView(
+    public ResponseEntity<MeView> me(@AuthenticationPrincipal UserEntity user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        MeView meView = new MeView(
                 user.getId(),
                 user.getEmail(),
                 user.getUsername(),
                 user.getName(),
-                user.getRoles()
+                user.getRoles().stream()
+                        .map(RoleEntity::getName) // pega só o nome da role
+                        .toList()
         );
+        return ResponseEntity.ok(meView);
     }
-
-
-
 
     @GetMapping("/admin/ping")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public String adminPing() { return "admin ok"; }
 
-    public static class MeView {
-        private Long id;
-        private String email;
-        private String username;
-        private String name;
-        private Set<RoleEntity> roles;
-
-        public MeView(Long id, String email, String username, String name, Set<RoleEntity> roles) {
-            this.id = id;
-            this.email = email;
-            this.username = username;
-            this.name = name;
-            this.roles = roles;
-        }
-
-        public Long getId() { return id; }
-        public String getEmail() { return email; }
-        public String getUsername() { return username; }
-        public String getName() { return name; }
-        public Set<RoleEntity> getRoles() { return roles; }
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        // No JWT stateless, não há sessão para invalidar
+        // O cliente deve remover o token localmente
+        return ResponseEntity.ok(Map.of("message", "Logout realizado. Remova o token localmente."));
     }
 }

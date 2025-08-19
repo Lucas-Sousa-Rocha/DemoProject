@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class UserEntity implements UserDetails {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column(nullable = false, unique = true)
@@ -83,11 +83,17 @@ public class UserEntity implements UserDetails {
     public void setRoles(Set<RoleEntity> roles) { this.roles = roles; }
 
     // UserDetails
+//    @Override
+//    public Collection<? extends GrantedAuthority> getAuthorities() {
+//        return roles.stream()
+//                .map(r -> new SimpleGrantedAuthority(r.getName()))
+//                .collect(Collectors.toList());
+//    }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
                 .map(r -> new SimpleGrantedAuthority(r.getName()))
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
     @Override
