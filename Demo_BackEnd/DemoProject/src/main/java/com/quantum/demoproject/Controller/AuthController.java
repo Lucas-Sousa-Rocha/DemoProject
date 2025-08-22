@@ -1,6 +1,7 @@
 package com.quantum.demoproject.Controller;
 
 import com.quantum.demoproject.DTO.*;
+import com.quantum.demoproject.Service.TokenService;
 import com.quantum.demoproject.auth.AuthService;
 import com.quantum.demoproject.model.RoleEntity;
 import com.quantum.demoproject.model.UserEntity;
@@ -10,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
@@ -19,9 +19,11 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final TokenService tokenService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, TokenService tokenService) {
         this.authService = authService;
+        this.tokenService = tokenService;
     }
 
     @PostMapping("/register")
@@ -33,14 +35,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest dto) {
         try {
-            TokenResponse token = authService.login(dto);
+            TokenResponse token = authService.login(dto); // salva token único no AuthService
             return ResponseEntity.ok(token);
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Usuário ou senha inválidos"));
-        } catch (UsernameNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Usuário não encontrado"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Erro ao processar login"));
@@ -78,7 +77,7 @@ public class AuthController {
                 user.getUsername(),
                 user.getName(),
                 user.getRoles().stream()
-                        .map(RoleEntity::getName) // pega só o nome da role
+                        .map(RoleEntity::getName)
                         .toList()
         );
         return ResponseEntity.ok(meView);
@@ -88,10 +87,11 @@ public class AuthController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public String adminPing() { return "admin ok"; }
 
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
-        // No JWT stateless, não há sessão para invalidar
-        // O cliente deve remover o token localmente
-        return ResponseEntity.ok(Map.of("message", "Logout realizado. Remova o token localmente."));
-    }
+@PostMapping("/logout")
+@PreAuthorize("isAuthenticated()")
+public ResponseEntity<?> logout(@AuthenticationPrincipal UserEntity user) {
+        tokenService.deleteUserToken(user.getId()); // agora realmente exclui
+    return ResponseEntity.ok(Map.of("message", "Logout realizado. Token removido."));
+}
+
 }

@@ -2,6 +2,7 @@ package com.quantum.demoproject.auth;
 
 import com.quantum.demoproject.DTO.*;
 import com.quantum.demoproject.Mail.EmailService;
+import com.quantum.demoproject.Service.TokenService;
 import com.quantum.demoproject.model.RoleEntity;
 import com.quantum.demoproject.model.UserEntity;
 import com.quantum.demoproject.repository.PasswordResetTokenRepository;
@@ -26,14 +27,15 @@ public class AuthService {
     private final JwtService jwt;
     private final PasswordResetTokenRepository resetRepo;
     private final EmailService emailService;
+    private final TokenService tokenService;
 
     public AuthService(UserRepository userRepo,
-       RoleRepository roleRepo,
-       PasswordEncoder encoder,
-       AuthenticationManager authManager,
-       JwtService jwt,
-       PasswordResetTokenRepository resetRepo,
-       EmailService emailService) {
+                       RoleRepository roleRepo,
+                       PasswordEncoder encoder,
+                       AuthenticationManager authManager,
+                       JwtService jwt,
+                       PasswordResetTokenRepository resetRepo,
+                       EmailService emailService, TokenService tokenService) {
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.encoder = encoder;
@@ -41,7 +43,10 @@ public class AuthService {
         this.jwt = jwt;
         this.resetRepo = resetRepo;
         this.emailService = emailService;
+        this.tokenService = tokenService;
     }
+
+
 
     @Transactional
     public void register(RegisterRequest dto) {
@@ -91,6 +96,10 @@ public class AuthService {
 
         String access = jwt.generateAccess(user.getUsername(), claims);
         String refresh = jwt.generateRefresh(user.getUsername());
+
+        // 🔹 salva token único (sessão única)
+        tokenService.saveUserToken(user.getId(), access);
+
         return new TokenResponse(access, refresh);
     }
 

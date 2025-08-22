@@ -47,25 +47,6 @@ public class SecurityConfig {
         return p;
     }
 
-//    @Bean
-//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//        http.csrf(csrf -> csrf.disable())
-//                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-//                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/auth/**", "/h2-console/**").permitAll()
-//                        .anyRequest().authenticated()
-//                )
-//                .exceptionHandling(ex -> ex
-//                        .authenticationEntryPoint(jwtAuthEntryPoint)
-//                )
-//                .headers(h -> h.frameOptions(f -> f.disable())) // H2 console
-//                .httpBasic(Customizer.withDefaults());
-//
-//        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-//        return http.build();
-//    }
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
@@ -80,10 +61,12 @@ public class SecurityConfig {
                 )
                 .headers(h -> h.frameOptions(f -> f.disable())); // H2 console
 
+        // 🔹 JwtAuthFilter valida se o token é o único válido no banco
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
 
     @Bean

@@ -1,5 +1,6 @@
 package com.quantum.demoproject.security;
 
+import com.quantum.demoproject.Service.TokenService;
 import com.quantum.demoproject.model.UserEntity;
 import com.quantum.demoproject.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -25,17 +26,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepo;
+    private final TokenService tokenService;
 
-    // Ignorar apenas endpoints públicos
     private final RequestMatcher skipAuthEndpoints = request ->
             request.getRequestURI().startsWith("/auth/login") ||
                     request.getRequestURI().startsWith("/auth/register") ||
                     request.getRequestURI().startsWith("/auth/refresh") ||
                     request.getRequestURI().startsWith("/h2-console");
 
-    public JwtAuthFilter(JwtService jwtService, UserRepository userRepo) {
+    public JwtAuthFilter(JwtService jwtService, UserRepository userRepo, TokenService tokenService) {
         this.jwtService = jwtService;
         this.userRepo = userRepo;
+        this.tokenService = tokenService;
     }
 
     @Override
@@ -57,6 +59,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
+
         try {
             String username = jwtService.getSubject(token);
             logger.debug("Token JWT recebido para usuário: {}", username);
@@ -64,6 +67,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserEntity user = userRepo.findByUsername(username)
                         .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+                // 🔹 Verifica se o token é o último válido (sessão única)
+                if (!tokenService.isTokenValid(user.getId(), token)) {
+                    logger.warn("Token antigo detectado para usuário: {}", username);
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\": \"Sessão expirada. Faça login novamente.\"}");
+                    return;
+                }
 
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

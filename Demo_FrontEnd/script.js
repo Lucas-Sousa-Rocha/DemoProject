@@ -1,4 +1,6 @@
-const API_URL = "https://api.test.lucas5823.c44.integrator.host/auth";
+//const API_URL = "https://api.test.lucas5823.c44.integrator.host/auth";
+
+const API_URL = "http://localhost:8080/auth";
 
 // Função de login
 async function login() {
@@ -48,7 +50,7 @@ async function loadUser() {
         if (!res.ok) {
             console.error("Falha ao buscar usuário:", await res.text());
             localStorage.removeItem("accessToken");
-            window.location.href = "login.html";
+            window.location.href = "index.html";
             return;
         }
 
@@ -62,15 +64,25 @@ async function loadUser() {
     } catch (err) {
         console.error("Erro ao carregar usuário:", err);
         localStorage.removeItem("accessToken");
-        window.location.href = "login.html";
+        window.location.href = "index.html";
     }
 }
 
 // Função de logout
-function logout() {
+async function logout() {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+        await fetch("http://localhost:8080/auth/logout", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            }
+        });
+    }
     localStorage.removeItem("accessToken");
     window.location.href = "index.html";
 }
+
 
 // Função para mostrar tokens
 function mostrarTokens() {
